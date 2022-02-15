@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">MapsApp</string>
     <string name="title_activity_maps">MapsActivity</string>
+    <string name="title_activity_marker">MarkerActivity</string>
+    <!--Layout-->
+    <string name="created_at">created at:</string>
 </resources>

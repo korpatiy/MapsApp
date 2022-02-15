@@ -51,8 +51,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        //todo
-        startActivity(Intent(this, MapsActivity::class.java))
+        startActivity(Intent(this, MarkerActivity::class.java))
         return false
     }
 }
