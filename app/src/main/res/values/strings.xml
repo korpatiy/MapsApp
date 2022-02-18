@@ -4,4 +4,5 @@
     <string name="title_activity_marker">MarkerActivity</string>
     <!--Layout-->
     <string name="created_at">created at:</string>
+    <string name="fab_description">Add new photo</string>
 </resources>

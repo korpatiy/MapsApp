@@ -1,8 +1,9 @@
 package com.example.mapsapp.model
 
-import java.time.LocalDate
+import android.graphics.Bitmap
+import java.time.LocalDateTime
 
 class ImageItem(
-    val imageId: Int,
-    val createDate: LocalDate = LocalDate.now()
+    val image: Bitmap,
+    val createDate: LocalDateTime = LocalDateTime.now()
 )
