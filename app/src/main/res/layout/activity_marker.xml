@@ -11,10 +11,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
+        android:layout_margin="15dp"
         android:clickable="true"
         android:contentDescription="@string/fab_description"
-        android:layout_margin="15dp"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        app:srcCompat="@android:drawable/ic_menu_camera" />
 
     <include layout="@layout/item_list" />
 

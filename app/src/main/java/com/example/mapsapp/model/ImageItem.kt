@@ -1,9 +1,9 @@
 package com.example.mapsapp.model
 
-import android.graphics.Bitmap
+import android.net.Uri
 import java.time.LocalDateTime
 
 class ImageItem(
-    val image: Bitmap,
+    val image: Uri,
     val createDate: LocalDateTime = LocalDateTime.now()
 )
