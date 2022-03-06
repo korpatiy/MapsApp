@@ -31,7 +31,7 @@ class MarkerViewAdapter(
     override fun onBindViewHolder(holder: MarkerViewAdapter.ViewHolder, position: Int) {
         val imageItem = values[position]
         //holder.imageView.setImageBitmap(imageItem.image)
-        holder.imageView.setImageURI(imageItem.image)
+        holder.imageView.setImageURI(imageItem.imageUri)
         holder.createdDateTextView.text = imageItem.createDate.toString()
     }
 

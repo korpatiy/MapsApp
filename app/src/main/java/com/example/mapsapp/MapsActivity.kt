@@ -1,11 +1,10 @@
 package com.example.mapsapp
 
 import android.content.Intent
-import android.graphics.Bitmap
 import android.os.Bundle
-import android.os.Parcelable
 import androidx.appcompat.app.AppCompatActivity
 import com.example.mapsapp.databinding.ActivityMapsBinding
+import com.example.mapsapp.realm.models.MarkerRealm
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
@@ -13,6 +12,9 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
+import io.realm.Realm
+import io.realm.kotlin.executeTransactionAwait
+import kotlinx.coroutines.Dispatchers
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener,
@@ -20,10 +22,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
     private lateinit var gMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
-    private var markerList: ArrayList<LatLng> = arrayListOf()
+    private lateinit var realm: Realm
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        realm = Realm.getDefaultInstance()
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -39,7 +42,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         gMap.uiSettings.isZoomControlsEnabled = true
 
         val baseMarker = LatLng(58.01041829322895, 56.22591963195325)
-        gMap.addMarker(MarkerOptions().position(baseMarker).title("Perm city"))
         gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(baseMarker, 15F))
 
         drawMarkers()
@@ -48,9 +50,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     }
 
     private fun drawMarkers() {
-        markerList.forEach {
+        val markers = realm.where(MarkerRealm::class.java).findAll()
+        markers.forEach {
             gMap.addMarker(
-                MarkerOptions().position(it).title("${it.latitude} - ${it.longitude}")
+                MarkerOptions().position(LatLng(it.latitude, it.longitude))
+                    .title("${it.latitude} - ${it.longitude}")
+            )
+        }
+
+        if (markers.isNotEmpty()) {
+            val baseMarker = markers.last()!!
+            gMap.animateCamera(
+                CameraUpdateFactory.newLatLngZoom(
+                    LatLng(
+                        baseMarker.latitude,
+                        baseMarker.longitude
+                    ), 15F
+                )
             )
         }
     }
@@ -60,23 +76,24 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         gMap.addMarker(
             MarkerOptions().position(latLng).title("${latLng.latitude} - ${latLng.longitude}")
         )
-        markerList.add(latLng)
+        realm.executeTransactionAsync {
+            it.insert(MarkerRealm(latitude = latLng.latitude, longitude = latLng.longitude))
+        }
     }
+
 
     override fun onMarkerClick(marker: Marker): Boolean {
-        val intent = Intent(this, MarkerActivity::class.java)
-        intent.putExtra("markerId", marker.id)
-        startActivity(intent)
+        val position = marker.position
+        val markerDB = realm.where(MarkerRealm::class.java)
+            .equalTo(MarkerRealm::latitude.name, position.latitude)
+            .equalTo(MarkerRealm::longitude.name, position.longitude)
+            .findFirst()
+
+        markerDB?.let {
+            val intent = Intent(this, MarkerActivity::class.java)
+            intent.putExtra("markerId", it.id)
+            startActivity(intent)
+        }
         return false
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putParcelableArrayList("markers", markerList)
-    }
-
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        markerList = savedInstanceState.getParcelableArrayList("markers") ?: arrayListOf()
     }
 }
