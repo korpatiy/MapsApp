@@ -1,16 +1,19 @@
 package com.example.mapsapp
 
 import android.Manifest
+import android.annotation.SuppressLint
+import android.content.ContentValues.TAG
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.mapsapp.databinding.ActivityMapsBinding
 import com.example.mapsapp.realm.models.MarkerRealm
-import com.github.dhaval2404.imagepicker.util.PermissionUtil
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -22,6 +25,7 @@ import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
 import io.realm.Realm
 
+
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener,
     GoogleMap.OnMapClickListener {
@@ -31,10 +35,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     private lateinit var realm: Realm
 
     private lateinit var fusedLocationProviderClient: FusedLocationProviderClient
-    private lateinit var currentLocation: Location
+
+    private var lastKnownLocation: Location? = null
+    private val baseLocation = LatLng(58.01041829322895, 56.22591963195325)
+    private var locationPermissionGranted = false
 
     companion object {
         private const val LOCATION_PERMISSION_REQUEST_CODE = 1
+        private const val DEFAULT_ZOOM = 15F
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,65 +63,100 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     override fun onMapReady(googleMap: GoogleMap) {
         gMap = googleMap
         gMap.uiSettings.isZoomControlsEnabled = true
-        setUpMap()
 
-        val baseMarker = LatLng(58.01041829322895, 56.22591963195325)
-        gMap.animateCamera(CameraUpdateFactory.newLatLngZoom(baseMarker, 15F))
         drawMarkers()
+
+        getLocationPermission()
+        updateLocationUI()
+        getDeviceLocation()
+
         gMap.setOnMapClickListener(this)
         gMap.setOnMarkerClickListener(this)
     }
 
+    @SuppressLint("MissingPermission")
+    private fun updateLocationUI() {
+        try {
+            if (locationPermissionGranted) {
+                gMap.isMyLocationEnabled = true
+                gMap.uiSettings.isMyLocationButtonEnabled = true
+            } else {
+                gMap.isMyLocationEnabled = false
+                gMap.uiSettings.isMyLocationButtonEnabled = false
+                lastKnownLocation = null
+                //getLocationPermission()
+            }
+        } catch (e: SecurityException) {
+            Log.e("Exception: %s", e.message, e)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun getDeviceLocation() {
+        try {
+            if (locationPermissionGranted) {
+                val locationResult = fusedLocationProviderClient.lastLocation
+                locationResult.addOnCompleteListener(this) { task ->
+                    if (task.isSuccessful) {
+                        lastKnownLocation = task.result
+                        if (lastKnownLocation != null) {
+                            gMap.moveCamera(
+                                CameraUpdateFactory.newLatLngZoom(
+                                    LatLng(
+                                        lastKnownLocation!!.latitude,
+                                        lastKnownLocation!!.longitude
+                                    ), DEFAULT_ZOOM
+                                )
+                            )
+                        }
+                    } else {
+                        Log.d(TAG, "Current location is null. Using defaults.")
+                        Log.e(TAG, "Exception: %s", task.exception)
+                        gMap.moveCamera(
+                            CameraUpdateFactory
+                                .newLatLngZoom(baseLocation, DEFAULT_ZOOM)
+                        )
+                        gMap.uiSettings.isMyLocationButtonEnabled = false
+                    }
+                }
+            }
+        } catch (e: SecurityException) {
+            Log.e("Exception: %s", e.message, e)
+        }
+    }
+
+    private fun getLocationPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this.applicationContext,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+            == PackageManager.PERMISSION_GRANTED
+        ) {
+            locationPermissionGranted = true
+        } else {
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                LOCATION_PERMISSION_REQUEST_CODE
+            )
+        }
+    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<out String>,
+        permissions: Array<String>,
         grantResults: IntArray
     ) {
-
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-    }
-
-    private fun setUpMap() {
-        checkPermissions()
-    /*    gMap.isMyLocationEnabled = true
-
-        fusedLocationProviderClient.lastLocation.addOnSuccessListener {
-            gMap.addMarker(
-                MarkerOptions().position(LatLng(it.latitude, it.longitude))
-                    .title("${it.latitude} - ${it.longitude}")
-
-            )
-        }*/
-
-    }
-
-    private fun checkPermissions() {
-
-     /*   if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED) {
-            if (map != null) {
-                map.setMyLocationEnabled(true);
-            }
-        } else {
-            // Permission to access the location is missing. Show rationale and request permission
-            PermissionUtils.requestPermission(this, LOCATION_PERMISSION_REQUEST_CODE,
-                Manifest.permission.ACCESS_FINE_LOCATION, true);
-        }*/
-
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION),
-                LOCATION_PERMISSION_REQUEST_CODE
-            )
+        locationPermissionGranted = false
+        if (requestCode != LOCATION_PERMISSION_REQUEST_CODE) {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults)
             return
         }
+        if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+            locationPermissionGranted = true
+        else {
+            Toast.makeText(this, "Permission denied", Toast.LENGTH_SHORT).show()
+        }
+        updateLocationUI()
     }
 
     private fun drawMarkers() {
