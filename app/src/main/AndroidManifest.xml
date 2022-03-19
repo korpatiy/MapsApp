@@ -4,7 +4,9 @@
 
     <uses-feature android:name="android.hardware.camera" />
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
     <application
         android:name=".MapsApplication"
@@ -20,7 +22,7 @@
             android:value="${MAPS_API_KEY}" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name=".activity.MapsActivity"
             android:exported="true"
             android:label="@string/title_activity_maps">
             <intent-filter>
@@ -30,7 +32,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".MarkerActivity"
+            android:name=".activity.MarkerActivity"
             android:exported="false"
             android:label="@string/title_activity_marker" />
     </application>

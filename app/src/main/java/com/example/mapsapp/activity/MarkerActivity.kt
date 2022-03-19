@@ -1,4 +1,4 @@
-package com.example.mapsapp
+package com.example.mapsapp.activity
 
 import android.app.Activity
 import android.net.Uri
@@ -7,11 +7,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.mapsapp.R
+import com.example.mapsapp.adapter.MarkerViewAdapter
 import com.example.mapsapp.model.ImageItem
-import com.example.mapsapp.model.ItemViewModel
 import com.example.mapsapp.realm.models.ImageRealm
 import com.example.mapsapp.realm.models.MarkerRealm
 import com.github.dhaval2404.imagepicker.ImagePicker

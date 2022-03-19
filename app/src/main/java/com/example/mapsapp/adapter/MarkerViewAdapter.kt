@@ -1,4 +1,4 @@
-package com.example.mapsapp
+package com.example.mapsapp.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -18,7 +18,7 @@ class MarkerViewAdapter(
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
-    ): MarkerViewAdapter.ViewHolder {
+    ): ViewHolder {
         return ViewHolder(
             SingleItemBinding.inflate(
                 LayoutInflater.from(parent.context),
@@ -28,7 +28,7 @@ class MarkerViewAdapter(
         )
     }
 
-    override fun onBindViewHolder(holder: MarkerViewAdapter.ViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val imageItem = values[position]
         //holder.imageView.setImageBitmap(imageItem.image)
         holder.imageView.setImageURI(imageItem.imageUri)

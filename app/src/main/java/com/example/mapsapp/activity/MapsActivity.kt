@@ -1,17 +1,20 @@
-package com.example.mapsapp
+package com.example.mapsapp.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
+import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.mapsapp.R
 import com.example.mapsapp.databinding.ActivityMapsBinding
 import com.example.mapsapp.realm.models.MarkerRealm
 import com.google.android.gms.location.FusedLocationProviderClient
@@ -53,6 +56,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
+/*
+
+        Intent(this, HelloService::class.java).also { intent ->
+            startService(intent)
+        }
+*/
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -60,6 +69,14 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         mapFragment.getMapAsync(this)
     }
 
+    private class MyLocationListener : android.location.LocationListener {
+        override fun onLocationChanged(location: Location) {
+            //location.distanceTo()
+            //println("${location.latitude} - ${location.longitude}")
+        }
+    }
+
+    @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
         gMap = googleMap
         gMap.uiSettings.isZoomControlsEnabled = true
@@ -70,6 +87,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         updateLocationUI()
         getDeviceLocation()
 
+        val myLocationListener = MyLocationListener()
+        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        locationManager.requestLocationUpdates(
+            LocationManager.GPS_PROVIDER, 5000, 10F, myLocationListener
+        )
         gMap.setOnMapClickListener(this)
         gMap.setOnMarkerClickListener(this)
     }
@@ -131,11 +153,20 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
                 Manifest.permission.ACCESS_FINE_LOCATION
             )
             == PackageManager.PERMISSION_GRANTED
+            &&
+            ContextCompat.checkSelfPermission(
+                this.applicationContext,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
         ) {
             locationPermissionGranted = true
         } else {
             ActivityCompat.requestPermissions(
-                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                this,
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ),
                 LOCATION_PERMISSION_REQUEST_CODE
             )
         }
