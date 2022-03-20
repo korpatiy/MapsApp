@@ -3,11 +3,9 @@ package com.example.mapsapp.activity
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.ContentValues.TAG
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.Location
-import android.location.LocationManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -17,6 +15,7 @@ import androidx.core.content.ContextCompat
 import com.example.mapsapp.R
 import com.example.mapsapp.databinding.ActivityMapsBinding
 import com.example.mapsapp.realm.models.MarkerRealm
+import com.example.mapsapp.service.LocationService
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -31,7 +30,8 @@ import io.realm.Realm
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
     GoogleMap.OnMarkerClickListener,
-    GoogleMap.OnMapClickListener {
+    GoogleMap.OnMapClickListener,
+    GoogleMap.OnMyLocationButtonClickListener {
 
     private lateinit var gMap: GoogleMap
     private lateinit var binding: ActivityMapsBinding
@@ -56,12 +56,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
 
         binding = ActivityMapsBinding.inflate(layoutInflater)
         setContentView(binding.root)
-/*
-
-        Intent(this, HelloService::class.java).also { intent ->
-            startService(intent)
-        }
-*/
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         val mapFragment = supportFragmentManager
@@ -69,12 +63,6 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         mapFragment.getMapAsync(this)
     }
 
-    private class MyLocationListener : android.location.LocationListener {
-        override fun onLocationChanged(location: Location) {
-            //location.distanceTo()
-            //println("${location.latitude} - ${location.longitude}")
-        }
-    }
 
     @SuppressLint("MissingPermission")
     override fun onMapReady(googleMap: GoogleMap) {
@@ -84,14 +72,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         drawMarkers()
 
         getLocationPermission()
-        updateLocationUI()
-        getDeviceLocation()
+        //updateLocationUI()
+        //getDeviceLocation()
 
-        val myLocationListener = MyLocationListener()
-        val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        locationManager.requestLocationUpdates(
-            LocationManager.GPS_PROVIDER, 5000, 10F, myLocationListener
-        )
         gMap.setOnMapClickListener(this)
         gMap.setOnMarkerClickListener(this)
     }
@@ -102,6 +85,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             if (locationPermissionGranted) {
                 gMap.isMyLocationEnabled = true
                 gMap.uiSettings.isMyLocationButtonEnabled = true
+                Intent(this, LocationService::class.java).also {
+                    // applicationContext.startForegroundService(it)
+                    startService(it)
+                }
+                getDeviceLocation()
             } else {
                 gMap.isMyLocationEnabled = false
                 gMap.uiSettings.isMyLocationButtonEnabled = false
@@ -111,6 +99,11 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
         } catch (e: SecurityException) {
             Log.e("Exception: %s", e.message, e)
         }
+    }
+
+    override fun onMyLocationButtonClick(): Boolean {
+        getDeviceLocation()
+        return false
     }
 
     @SuppressLint("MissingPermission")
@@ -160,6 +153,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             ) == PackageManager.PERMISSION_GRANTED
         ) {
             locationPermissionGranted = true
+            updateLocationUI()
         } else {
             ActivityCompat.requestPermissions(
                 this,
@@ -235,5 +229,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback,
             startActivity(intent)
         }
         return false
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Intent(this, LocationService::class.java).also {
+            stopService(it)
+        }
     }
 }
